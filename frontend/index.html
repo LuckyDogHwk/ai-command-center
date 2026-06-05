@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI 方案助手</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <canvas id="flow-canvas" aria-hidden="true"></canvas>
+
+    <div class="app">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">AI Solution Assistant</p>
+          <h1>AI 方案助手</h1>
+          <p class="hero-copy">
+            输入一个想法，系统会帮你整理成可落地的 AI 应用方案，包括功能设计、实施步骤、风险提醒和参考依据。
+          </p>
+        </div>
+        <div class="hero-card" aria-label="使用步骤">
+          <span>1. 选择场景</span>
+          <span>2. 写下需求</span>
+          <span>3. 生成方案</span>
+          <small id="llm-state">AI 模型：检测中</small>
+        </div>
+      </header>
+
+      <main class="layout">
+        <div class="left-column">
+          <section class="panel start-panel">
+            <div class="panel-title">
+              <h2>你想做什么？</h2>
+              <button id="sample-btn" type="button" title="换一个示例">换例子</button>
+            </div>
+
+            <div class="template-grid" aria-label="常用场景">
+              <button class="template active" type="button" data-template="resume">
+                <b>简历教练</b>
+                <span>优化简历、生成面试题</span>
+              </button>
+              <button class="template" type="button" data-template="customer">
+                <b>客服助手</b>
+                <span>知识库问答、回复建议</span>
+              </button>
+              <button class="template" type="button" data-template="learning">
+                <b>学习顾问</b>
+                <span>答疑、学习路径推荐</span>
+              </button>
+              <button class="template" type="button" data-template="review">
+                <b>代码评审</b>
+                <span>风险检查、测试建议</span>
+              </button>
+            </div>
+
+            <label for="goal">把你的需求写在这里</label>
+            <textarea id="goal" rows="7">我想做一个 AI 简历教练，能根据岗位要求分析简历差距，重写项目亮点，生成面试问题，并提醒哪些表述可能有风险。</textarea>
+
+            <details class="advanced">
+              <summary>高级设置</summary>
+              <div class="field-row">
+                <label for="persona">分析视角</label>
+                <select id="persona">
+                  <option value="ai_engineer">AI 应用工程师</option>
+                  <option value="product_manager">产品经理</option>
+                  <option value="backend_engineer">后端工程师</option>
+                  <option value="ops_lead">运维负责人</option>
+                </select>
+              </div>
+              <div class="field-row">
+                <label for="top-k">参考资料数量：<b id="top-k-value">5</b></label>
+                <input id="top-k" type="range" min="1" max="8" value="5" />
+              </div>
+              <div class="field-row">
+                <label for="risk-mode">风险策略</label>
+                <select id="risk-mode">
+                  <option value="balanced">常规</option>
+                  <option value="strict">严格</option>
+                  <option value="creative">宽松</option>
+                </select>
+              </div>
+            </details>
+
+            <input id="temperature" type="hidden" value="0.35" />
+            <input id="strict" type="checkbox" checked hidden />
+            <button id="run-btn" class="primary-btn" type="button">生成 AI 方案</button>
+          </section>
+
+          <section class="panel knowledge-panel">
+            <div class="panel-title">
+              <h2>补充资料</h2>
+              <button id="add-knowledge-btn" type="button">加入资料</button>
+            </div>
+            <p class="muted">如果你有业务说明、岗位要求、产品文档，可以粘贴到这里。系统会把它作为后续生成方案的参考依据。</p>
+            <input id="doc-title" value="我的补充资料" aria-label="资料标题" />
+            <input id="doc-tags" value="business, requirement" aria-label="资料标签" />
+            <textarea id="doc-content" rows="5">这里可以粘贴业务背景、用户需求、岗位 JD、产品文档或 FAQ。资料越具体，生成的方案越贴近实际场景。</textarea>
+            <p id="knowledge-state" class="muted">当前已加载内置示例资料。</p>
+          </section>
+        </div>
+
+        <section class="panel result-panel">
+          <div class="panel-title">
+            <h2>生成结果</h2>
+            <span id="run-state" class="status-pill">待生成</span>
+          </div>
+
+          <div class="progress-rail" id="agent-map">
+            <div class="step active" data-role="Planner"><b>理解需求</b><span>拆解目标</span></div>
+            <div class="step" data-role="Retriever"><b>查找资料</b><span>召回依据</span></div>
+            <div class="step" data-role="Reasoner"><b>组织方案</b><span>形成建议</span></div>
+            <div class="step" data-role="Verifier"><b>检查风险</b><span>安全提醒</span></div>
+            <div class="step" data-role="Reporter"><b>输出结果</b><span>整理呈现</span></div>
+          </div>
+
+          <article class="answer-card">
+            <h3>方案说明</h3>
+            <p id="answer">点击“生成 AI 方案”后，这里会显示方案说明。</p>
+          </article>
+
+          <article>
+            <h3>下一步怎么做</h3>
+            <ol id="action-plan" class="plan-list">
+              <li>先选择一个场景模板，或者直接输入自己的需求。</li>
+              <li>点击生成后，查看方案、步骤、风险和参考资料。</li>
+            </ol>
+          </article>
+        </section>
+
+        <aside class="panel side-panel">
+          <div class="panel-title">
+            <h2>可信度检查</h2>
+            <span class="live-dot">实时</span>
+          </div>
+
+          <div class="score-list" id="metrics">
+            <div><em>依据充分</em><span style="--value:0%"></span><b>--</b></div>
+            <div><em>回答相关</em><span style="--value:0%"></span><b>--</b></div>
+            <div><em>覆盖完整</em><span style="--value:0%"></span><b>--</b></div>
+            <div><em>风险较低</em><span style="--value:0%"></span><b>--</b></div>
+          </div>
+
+          <h3>需要注意</h3>
+          <ul id="guardrails" class="notice-list">
+            <li>生成后会显示隐私、合规、提示词注入等提醒。</li>
+          </ul>
+
+          <h3>参考资料</h3>
+          <div id="sources" class="sources">
+            <p class="muted">生成后会展示系统参考了哪些知识片段。</p>
+          </div>
+        </aside>
+
+      </main>
+    </div>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>
