@@ -6,8 +6,11 @@ import urllib.error
 import urllib.request
 
 
-DEEPSEEK_API_URL = "https://api.deepseek.com/chat/completions"
-DEFAULT_MODEL = "deepseek-v4-flash"
+# Edit these values when you want to switch API provider, model, or key.
+# Keep CODE_API_KEY empty before pushing this project to a public GitHub repo.
+CODE_API_KEY = ""
+CODE_API_URL = "https://api.deepseek.com/chat/completions"
+CODE_MODEL = "deepseek-v4-flash"
 
 
 class LLMError(RuntimeError):
@@ -15,11 +18,19 @@ class LLMError(RuntimeError):
 
 
 def deepseek_enabled() -> bool:
-    return bool(os.getenv("DEEPSEEK_API_KEY"))
+    return bool(api_key())
 
 
 def deepseek_model() -> str:
-    return os.getenv("DEEPSEEK_MODEL", DEFAULT_MODEL)
+    return CODE_MODEL.strip() or os.getenv("DEEPSEEK_MODEL", "deepseek-v4-flash")
+
+
+def api_key() -> str:
+    return CODE_API_KEY.strip() or os.getenv("DEEPSEEK_API_KEY", "").strip()
+
+
+def api_url() -> str:
+    return CODE_API_URL.strip() or "https://api.deepseek.com/chat/completions"
 
 
 def generate_with_deepseek(
@@ -32,9 +43,9 @@ def generate_with_deepseek(
     temperature: float,
     timeout: float = 45,
 ) -> str:
-    api_key = os.getenv("DEEPSEEK_API_KEY")
-    if not api_key:
-        raise LLMError("DEEPSEEK_API_KEY is not configured.")
+    configured_api_key = api_key()
+    if not configured_api_key:
+        raise LLMError("API key is not configured. Edit CODE_API_KEY in backend/llm.py.")
 
     evidence = "\n\n".join(
         f"[{index}] {source['title']} score={source['score']}\n{source['snippet']}"
@@ -76,11 +87,11 @@ def generate_with_deepseek(
         "stream": False,
     }
     request = urllib.request.Request(
-        DEEPSEEK_API_URL,
+        api_url(),
         data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
         headers={
             "Content-Type": "application/json",
-            "Authorization": f"Bearer {api_key}",
+            "Authorization": f"Bearer {configured_api_key}",
         },
         method="POST",
     )

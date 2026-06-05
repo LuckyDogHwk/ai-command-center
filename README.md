@@ -106,7 +106,7 @@ flowchart LR
 | 检索方案 | TF-IDF、IDF、余弦相似度、Top-K |
 | 前端 | HTML、CSS、JavaScript |
 | 动态效果 | Canvas 数据流、步骤动画、打字机输出 |
-| 工程化 | 虚拟环境、环境变量、`.gitignore`、README 文档 |
+| 工程化 | 虚拟环境、代码化 API 配置、`.gitignore`、README 文档 |
 
 ## 项目结构
 
@@ -165,24 +165,31 @@ http://127.0.0.1:8010
 
 ## 接入 DeepSeek
 
-项目会读取环境变量 `DEEPSEEK_API_KEY`。请不要把 API Key 写进代码或提交到 GitHub。
+项目默认在代码里提供 API 配置入口，不需要每次启动前手动设置环境变量。
 
-PowerShell 临时设置：
+打开 `backend/llm.py`，修改文件顶部这几项：
+
+```python
+CODE_API_KEY = "你的 DeepSeek API Key"
+CODE_API_URL = "https://api.deepseek.com/chat/completions"
+CODE_MODEL = "deepseek-v4-flash"
+```
+
+然后直接启动项目：
 
 ```powershell
-$env:DEEPSEEK_API_KEY="你的 DeepSeek API Key"
-$env:DEEPSEEK_MODEL="deepseek-v4-flash"
 .\.venv\Scripts\python.exe backend\main.py
 ```
 
 说明：
 
-- 配置 Key 后，生成方案时会调用 DeepSeek。
-- 不配置 Key 时，系统会自动使用本地规则模式。
-- `.env` 已加入 `.gitignore`，避免误提交密钥。
-- `.env.example` 只放示例字段，不放真实 Key。
+- `CODE_API_KEY` 有值时，生成方案会调用 DeepSeek。
+- `CODE_API_KEY` 为空时，系统会自动使用本地规则模式，方便离线演示。
+- 如果以后想换模型，只需要改 `CODE_MODEL`。
+- 如果以后换 OpenAI-Compatible API 服务，只需要改 `CODE_API_URL`、`CODE_API_KEY` 和 `CODE_MODEL`。
+- 仓库公开时不要提交真实 API Key；推送 GitHub 前建议先把 `CODE_API_KEY` 改回空字符串。
 
-DeepSeek 官方 OpenAI 兼容接口：
+DeepSeek 官方 OpenAI-Compatible 接口：
 
 ```text
 https://api.deepseek.com/chat/completions
